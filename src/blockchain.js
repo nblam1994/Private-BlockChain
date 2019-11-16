@@ -65,6 +65,27 @@ class Blockchain {
         let self = this;
         return new Promise(async (resolve, reject) => {
            
+            try {
+
+                let height = await self.getChainHeight();
+
+                if(height !== -1) {
+                    let previousBlock = self.chain[self.chain.length - 1];
+                    block.previousBlock = previousBlock.hash;
+                }
+
+                block.hash = SHA256(JSON.stringify(block)).toString();
+                block.timeStamp = new Date().getTime().toString().slice(0,-3);
+                block.height = self.chain.length;
+                self.height = self.height + 1;
+
+                self.chain.push(block);
+                resolve(block);
+
+            } catch(err) {
+                reject(err);
+            }
+
         });
     }
 
@@ -79,6 +100,9 @@ class Blockchain {
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
             
+            let message = `${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`;
+            resolve(message); 
+
         });
     }
 
@@ -102,6 +126,29 @@ class Blockchain {
     submitStar(address, message, signature, star) {
         let self = this;
         return new Promise(async (resolve, reject) => {
+
+            let submitedTime = parseInt(message.split(':')[1]);
+            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+
+            if(currentTime - submitedTime <= (5 * 60 * 1000) ) {
+
+                let isValid = bitcoinMessage.verify(message, address, signature);
+
+                if(isValid) {
+
+                    let block = new BlockClass.Block({walletAddress: address, star: star});
+                    let addedBlock = await this._addBlock(block);
+
+                    resolve(addedBlock);
+                }
+                else {
+                    reject("Invalid signature !!!");
+                }
+            }
+            else {
+                
+                reject("Submit after 5 mins");
+            }
             
         });
     }
@@ -116,6 +163,15 @@ class Blockchain {
         let self = this;
         return new Promise((resolve, reject) => {
            
+            for (let i = 0; i < self.chain; i++) {
+
+                let block = self.chain[i];
+                if (hash === block.hash) {
+                    resolve(block);
+                }
+            }
+
+            reject(false);
         });
     }
 
@@ -147,6 +203,19 @@ class Blockchain {
         let stars = [];
         return new Promise((resolve, reject) => {
             
+            for (let i = 0; i < self.chain.length; i++) {
+
+                let block = self.chain[i];
+                let blockData = block.getBData();
+
+                if(blockData && blockData.walletAddress === address) {
+
+                    stars.push(blockData.star);
+                }
+            }
+
+            resolve(stars);
+
         });
     }
 
@@ -160,6 +229,41 @@ class Blockchain {
         let self = this;
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
+
+            let promises = []
+            for (let i = 0; i < self.chain.length; i++) {
+                let block = self.chain[i];
+                promises.push(block.validate());
+
+                if(i > 0) {
+                    let previousBlock = self.chain[i - 1];
+                    if(previousBlock.hash !== block.previousBlock) {
+                        errorLog.push(
+                            `Block Height ${block.height} does not match previous HASH`
+                        )
+                    }
+                }
+            }
+
+            Promise.all(promises).then(results => {
+
+                
+                for (let i = 0; i < results.length; i++) {
+
+                    let isValid = results.length[i];
+                    if(!isValid) {
+                        errorLog.push(
+                            `Block Height ${i} is tampered`
+                        );
+                    }
+                }
+
+                resolve(errorLog);
+            }).catch(err) {
+
+                console.log(err);
+                reject(err);
+            }
             
         });
     }
