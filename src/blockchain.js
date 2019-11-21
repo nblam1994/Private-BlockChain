@@ -75,7 +75,7 @@ class Blockchain {
                 }
 
                 block.hash = SHA256(JSON.stringify(block)).toString();
-                block.timeStamp = new Date().getTime().toString().slice(0,-3);
+                block.time = new Date().getTime().toString().slice(0,-3);
                 block.height = self.chain.length;
                 self.height = self.height + 1;
 
@@ -259,11 +259,12 @@ class Blockchain {
                 }
 
                 resolve(errorLog);
-            }).catch(err) {
+
+            }).catch( err => {
 
                 console.log(err);
                 reject(err);
-            }
+            })
             
         });
     }
