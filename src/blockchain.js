@@ -74,9 +74,9 @@ class Blockchain {
                     block.previousBlockHash = previousBlock.hash;
                 }
 
-                block.hash = SHA256(JSON.stringify(block)).toString();
                 block.time = new Date().getTime().toString().slice(0,-3);
                 block.height = self.chain.length;
+                block.hash = SHA256(JSON.stringify(block)).toString();
                 self.height = self.height + 1;
 
                 self.chain.push(block);
@@ -163,7 +163,7 @@ class Blockchain {
         let self = this;
         return new Promise((resolve, reject) => {
            
-            for (let i = 0; i < self.chain; i++) {
+            for (let i = 0; i < self.chain.length; i++) {
 
                 let block = self.chain[i];
                 if (hash === block.hash) {
@@ -210,7 +210,7 @@ class Blockchain {
 
                 if(blockData && blockData.walletAddress === address) {
 
-                    stars.push(blockData.star);
+                    stars.push({owner: blockData.walletAddress, star:blockData.star});
                 }
             }
 
@@ -230,42 +230,28 @@ class Blockchain {
         let errorLog = [];
         return new Promise(async (resolve, reject) => {
 
-            let promises = []
             for (let i = 0; i < self.chain.length; i++) {
                 let block = self.chain[i];
-                promises.push(block.validate());
 
                 if(i > 0) {
                     let previousBlock = self.chain[i - 1];
-                    if(previousBlock.hash !== block.previousBlock) {
+                    if(previousBlock.hash !== block.previousBlockHash) {
                         errorLog.push(
-                            `Block Height ${block.height} does not match previous HASH`
+                            `Block Height ${i} does not match previous HASH`
                         )
                     }
                 }
-            }
 
-            Promise.all(promises).then(results => {
-
-                
-                for (let i = 0; i < results.length; i++) {
-
-                    let isValid = results.length[i];
+                let isValid = await block.validate();
+                if(!isValid) {
                     if(!isValid) {
                         errorLog.push(
                             `Block Height ${i} is tampered`
                         );
                     }
                 }
+            }
 
-                resolve(errorLog);
-
-            }).catch( err => {
-
-                console.log(err);
-                reject(err);
-            })
-            
         });
     }
 

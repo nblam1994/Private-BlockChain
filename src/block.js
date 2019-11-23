@@ -45,7 +45,7 @@ class Block {
 
             let newHash = SHA256(JSON.stringify(self)).toString();
 
-            self.hash = currentHash;
+            self.hash = propertyHash;
                                             
             resolve(propertyHash === newHash);
 
