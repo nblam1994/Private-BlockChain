@@ -71,7 +71,7 @@ class Blockchain {
 
                 if(height !== -1) {
                     let previousBlock = self.chain[self.chain.length - 1];
-                    block.previousBlock = previousBlock.hash;
+                    block.previousBlockHash = previousBlock.hash;
                 }
 
                 block.hash = SHA256(JSON.stringify(block)).toString();
