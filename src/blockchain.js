@@ -233,13 +233,12 @@ class Blockchain {
             for (let i = 0; i < self.chain.length; i++) {
                 let block = self.chain[i];
 
-                if(i > 0) {
-                    let previousBlock = self.chain[i - 1];
-                    if(previousBlock.hash !== block.previousBlockHash) {
-                        errorLog.push(
-                            `Block Height ${i} does not match previous HASH`
-                        )
-                    }
+                let previousBlock = self.chain[i - 1];
+                if(i > 0 && previousBlock.hash !== block.previousBlockHash) {    
+                    errorLog.push(
+                        `Block Height ${i} does not match previous HASH`
+                    )
+                    
                 }
 
                 let isValid = await block.validate();
@@ -252,6 +251,7 @@ class Blockchain {
                 }
             }
 
+            resolve(errorLog);
         });
     }
 
